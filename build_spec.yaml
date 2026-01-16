@@ -1,0 +1,25 @@
+version: 0.1
+component: build
+timeoutInSeconds: 3600
+shell: bash
+
+env:
+  variables:
+    OCIR_REPO_NAME: "hello-php"  # Change to your repo name in OCIR (create it first in console)
+
+steps:
+  - type: Command
+    name: "Docker Login to OCIR"
+    command: |
+      echo "$OCIR_AUTH_TOKEN" | docker login -u "$OCIR_USERNAME" --password-stdin $OCIR_REGISTRY
+
+  - type: Command
+    name: "Build and Push Docker Image"
+    command: |
+      docker build -t $OCIR_REGISTRY/$$   OCIR_REPO_NAME:   $${OCI_BUILD_RUN_ID} .
+      docker push $OCIR_REGISTRY/$$   OCIR_REPO_NAME:   $${OCI_BUILD_RUN_ID}
+
+outputArtifacts:
+  - name: hello_php_image
+    type: DOCKER_IMAGE
+    location: $OCIR_REGISTRY/$$   OCIR_REPO_NAME:   $${OCI_BUILD_RUN_ID}
