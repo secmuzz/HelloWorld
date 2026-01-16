@@ -5,7 +5,7 @@ shell: bash
 
 env:
   variables:
-    OCIR_REPO_NAME: "hello-php"  # Change to your repo name in OCIR (create it first in console)
+    OCIR_REPO_NAME: "HelloWorld"  # Change to your repo name in OCIR (create it first in console)
 
 steps:
   - type: Command
