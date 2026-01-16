@@ -1,25 +1,49 @@
 version: 0.1
 component: build
-timeoutInSeconds: 3600
+timeoutInSeconds: 6000
 shell: bash
-
+failImmediatelyOnError: true
 env:
-  variables:
-    OCIR_REPO_NAME: "HelloWorld"  # Change to your repo name in OCIR (create it first in console)
+  exportedVariables:
+    - BuildServiceDemoVersion
 
 steps:
   - type: Command
-    name: "Docker Login to OCIR"
+    name: "Build Source"
+    timeoutInSeconds: 4000
+    failImmediatelyOnError: true
     command: |
-      echo "$OCIR_AUTH_TOKEN" | docker login -u "$OCIR_USERNAME" --password-stdin $OCIR_REGISTRY
-
+      echo $PATH
+      mvn clean install
   - type: Command
-    name: "Build and Push Docker Image"
+    timeoutInSeconds: 400
+    name: "Dockerizer"
     command: |
-      docker build -t $OCIR_REGISTRY/$$   OCIR_REPO_NAME:   $${OCI_BUILD_RUN_ID} .
-      docker push $OCIR_REGISTRY/$$   OCIR_REPO_NAME:   $${OCI_BUILD_RUN_ID}
+      BuildServiceDemoVersion=`echo ${OCI_BUILD_RUN_ID} | rev | cut -c 1-7`
+      echo $BuildServiceDemoVersion
+      docker build -t build-service-demo
+
+  - type: VulnerabilityAudit
+    name: "Scan my maven repo"
+    vulnerabilityAuditName: Report-${buildRunId}
+    vulnerabilityAuditCompartmentId: ocid1.compartment.oc1.iad.restoftheocid
+    knowledgeBaseId: ocid1.knowledgebase.oc1.iad.restoftheocid
+    configuration:
+      buildType: maven
+      pomFilePath: ./pom.xml
+      packagesToIgnore:
+        - "oracle.jdbc.*"
+        - "org.apache.logging.log4j:1.2"
+      maxPermissibleCvssV2Score: 5.0  
+      maxPermissibleCvssV3Score: 5.1
+      freeFormTags:
+                  key1: value1
+                  key2: value2
 
 outputArtifacts:
-  - name: hello_php_image
+  - name: build-service-demo
     type: DOCKER_IMAGE
-    location: $OCIR_REGISTRY/$$   OCIR_REPO_NAME:   $${OCI_BUILD_RUN_ID}
+    location: build-service-demo
+  - name: build-service-demo-kube-manifest
+    type: BINARY
+    location: deployment/app.yml
